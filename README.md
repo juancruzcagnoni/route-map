@@ -1,50 +1,58 @@
-# Welcome to your Expo app 👋
+# Route Map - Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A simple and intuitive route planning app built with React Native and Expo. Route Map helps users search for places, view directions, and estimate travel time by car, bike, or walking—all on a beautiful interactive map.
 
-## Get started
+---
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Search for any place or address** using autocomplete
+- **Instant route calculation** between your location and a selected destination
+- **Travel mode selection:** car, bike, or walking
+- **Estimated travel time** for each mode of transport
+- **Interactive map** with user location, destination marker, and route line
+- **Clear routes and search** with one tap
+- **Animated search overlay** for seamless UX
+- **Responsive UI** with support for light and dark status bar
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## Screens
 
-In the output, you'll find options to open the app in a
+- **Home / Map:** Search bar, live map, and travel mode selector
+- **Overlay:** Animated list of search results
+- **Duration Box:** Estimated travel time displayed when a route is set
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tech Stack
 
-## Get a fresh project
+- **React Native** with **Expo**
+- **Expo Location** for geolocation
+- **react-native-maps** for map view and markers
+- **OpenStreetMap (Nominatim)** for place search/autocomplete
+- **OSRM (Open Source Routing Machine)** API for route and travel time calculation
+- **expo-router** (if used) for routing/navigation
+- **Animated API** for smooth transitions
 
-When you're ready, run:
+---
 
-```bash
-npm run reset-project
-```
+## Architecture
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- **Modular components:**  
+  `SearchBar`, `SearchResultsOverlay`, `TransportSelector`, `DurationBox`
+- **Centralized state:**  
+  Uses React state/hooks for managing search, map, and UI
+- **Live calculations:**  
+  Distance, duration, and mode switching update UI in real time
 
-## Learn more
+---
 
-To learn more about developing your project with Expo, look at the following resources:
+## Why this project?
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Route Map was built to showcase:
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Clean, simple UX for mapping and navigation
+- Real integration of map, geolocation, and third-party APIs
+- Modular and readable React Native code structure
+- User-friendly mobile experience with responsive animations
