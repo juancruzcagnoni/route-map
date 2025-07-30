@@ -19,6 +19,12 @@ A simple and intuitive route planning app built with React Native and Expo. Rout
 - **Overlay:** Animated list of search results
 - **Duration Box:** Estimated travel time displayed when a route is set
 
+<p align="center">
+  <img src="assets/readme/home.PNG" alt="Home" width="200"/>
+  <img src="assets/readme/search.PNG" alt="Search" width="200"/>
+  <img src="assets/readme/result.PNG" alt="Result" width="200"/>
+</p>
+
 ## Tech Stack
 
 - **React Native** with **Expo**
