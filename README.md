@@ -2,8 +2,6 @@
 
 A simple and intuitive route planning app built with React Native and Expo. Route Map helps users search for places, view directions, and estimate travel time by car, bike, or walking—all on a beautiful interactive map.
 
----
-
 ## Features
 
 - **Search for any place or address** using autocomplete
@@ -15,15 +13,11 @@ A simple and intuitive route planning app built with React Native and Expo. Rout
 - **Animated search overlay** for seamless UX
 - **Responsive UI** with support for light and dark status bar
 
----
-
 ## Screens
 
 - **Home / Map:** Search bar, live map, and travel mode selector
 - **Overlay:** Animated list of search results
 - **Duration Box:** Estimated travel time displayed when a route is set
-
----
 
 ## Tech Stack
 
@@ -35,8 +29,6 @@ A simple and intuitive route planning app built with React Native and Expo. Rout
 - **expo-router** (if used) for routing/navigation
 - **Animated API** for smooth transitions
 
----
-
 ## Architecture
 
 - **Modular components:**  
@@ -45,8 +37,6 @@ A simple and intuitive route planning app built with React Native and Expo. Rout
   Uses React state/hooks for managing search, map, and UI
 - **Live calculations:**  
   Distance, duration, and mode switching update UI in real time
-
----
 
 ## Why this project?
 
