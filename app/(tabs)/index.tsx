@@ -1,75 +1,357 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { DurationBox } from "@/components/sections/DurationBox";
+import { SearchBar } from "@/components/sections/SearchBar";
+import { SearchResultsOverlay } from "@/components/sections/SearchResultsOverlay";
+import { TransportSelector } from "@/components/sections/TransportSelector";
+import { Feather } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  Keyboard,
+  StatusBar,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
+import MapView, { Marker, Polyline } from "react-native-maps";
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// Tipos
+type NominatimResult = {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address?: any;
+  _distance?: number;
+};
+type TransportMode = "driving" | "cycling" | "walking";
 
-export default function HomeScreen() {
+const SPEED = {
+  driving: 40,     // km/h
+  cycling: 15,     // km/h
+  walking: 5,      // km/h
+};
+
+export default function IndexScreen() {
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [destination, setDestination] = useState<{ lat: number; lon: number; name: string } | null>(null);
+  const [routeCoords, setRouteCoords] = useState<{ latitude: number; longitude: number }[]>([]);
+  const [mode, setMode] = useState<TransportMode>("driving");
+  const [duration, setDuration] = useState<number | null>(null);
+
+  const mapRef = useRef<MapView>(null);
+  const inputRef = useRef<TextInput>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Location permission denied");
+        return;
+      }
+      let loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc);
+    })();
+  }, []);
+
+  // Animación del overlay
+  useEffect(() => {
+    if (searchFocused) {
+      setShowOverlay(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    } else if (showOverlay) {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => setShowOverlay(false));
+      Keyboard.dismiss();
+    }
+  }, [searchFocused]);
+
+  // Buscar lugares en Nominatim
+  useEffect(() => {
+    if (search.length < 3 || !location) {
+      setSearchResults([]);
+      return;
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+        search
+      )}&format=json&addressdetails=1&limit=5`;
+      const resp = await fetch(url, {
+        headers: { "User-Agent": "ReactNativeApp" },
+        signal: controller.signal,
+      });
+      if (resp.ok) {
+        let data: NominatimResult[] = await resp.json();
+        data = data
+          .map((item) => ({
+            ...item,
+            _distance: getDistanceKm(
+              location.coords.latitude,
+              location.coords.longitude,
+              parseFloat(item.lat),
+              parseFloat(item.lon)
+            ),
+          }))
+          .sort((a, b) => (a._distance || 0) - (b._distance || 0));
+        setSearchResults(data);
+      }
+    }, 400);
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [search, location]);
+
+  // Obtener ruta y duración según modo
+  useEffect(() => {
+    const getRoute = async () => {
+      if (!destination || !location) return;
+      setDuration(null);
+
+      if (mode === "driving") {
+        const url = `https://router.project-osrm.org/route/v1/driving/${location.coords.longitude},${location.coords.latitude};${destination.lon},${destination.lat}?overview=full&geometries=geojson`;
+        const resp = await fetch(url);
+        if (resp.ok) {
+          const data = await resp.json();
+          const coords = data.routes[0].geometry.coordinates.map(
+            ([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon })
+          );
+          setRouteCoords(coords);
+          setDuration(data.routes[0].duration); // en segundos
+          if (mapRef.current) {
+            mapRef.current.fitToCoordinates(coords, {
+              edgePadding: { top: 100, left: 60, right: 60, bottom: 100 },
+              animated: true,
+            });
+          }
+        }
+      } else {
+        let coords: { latitude: number; longitude: number }[] = [];
+        let distanceKm = getDistanceKm(
+          location.coords.latitude,
+          location.coords.longitude,
+          destination.lat,
+          destination.lon
+        );
+
+        if (routeCoords.length > 0) {
+          coords = routeCoords;
+        } else {
+          const url = `https://router.project-osrm.org/route/v1/driving/${location.coords.longitude},${location.coords.latitude};${destination.lon},${destination.lat}?overview=full&geometries=geojson`;
+          const resp = await fetch(url);
+          if (resp.ok) {
+            const data = await resp.json();
+            coords = data.routes[0].geometry.coordinates.map(
+              ([lon, lat]: [number, number]) => ({ latitude: lat, longitude: lon })
+            );
+            setRouteCoords(coords);
+          }
+        }
+        const velocidad = SPEED[mode] * 1000 / 3600; // m/s
+        const durationSec = (distanceKm * 1000) / velocidad;
+        setDuration(durationSec);
+      }
+    };
+    getRoute();
+    // eslint-disable-next-line
+  }, [destination, mode]);
+
+  const handleSelectResult = (item: NominatimResult) => {
+    setDestination({
+      lat: parseFloat(item.lat),
+      lon: parseFloat(item.lon),
+      name: item.display_name,
+    });
+    setSearch(item.display_name);
+    setSearchFocused(false);
+  };
+
+  const handleCenterOnUser = async () => {
+    try {
+      let loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc);
+      if (mapRef.current) {
+        mapRef.current.animateToRegion(
+          {
+            latitude: loc.coords.latitude,
+            longitude: loc.coords.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          },
+          500
+        );
+      }
+    } catch (e) {
+      setErrorMsg("Could not get location");
+    }
+  };
+
+  function getResultTitleSubtitle(item: NominatimResult) {
+    if (!item.address) {
+      const [main, ...rest] = item.display_name.split(",");
+      return {
+        title: main.trim(),
+        subtitle: rest.join(", ").trim(),
+      };
+    }
+    const {
+      attraction, building, road, pedestrian, house_number, name,
+      city, town, village, suburb, municipality, state
+    } = item.address;
+    let title =
+      name ||
+      attraction ||
+      building ||
+      [road || pedestrian, house_number].filter(Boolean).join(" ").trim();
+    if (!title) {
+      title = item.display_name.split(",")[0].trim();
+    }
+    const subtitle = [
+      city || town || village || suburb || municipality,
+      state,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return { title, subtitle };
+  }
+
+  const handleClearSearch = () => {
+    setSearch("");
+    setSearchResults([]);
+    setDuration(null);
+    setRouteCoords([]);
+    setDestination(null);
+  };
+
+  if (!location && !errorMsg) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
+        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={{ flex: 1 }}>
+      <StatusBar
+        barStyle={showOverlay ? "dark-content" : "light-content"}
+        animated
+        backgroundColor={showOverlay ? "#fff" : "transparent"}
+      />
+      {/* Mapa */}
+      <MapView
+        ref={mapRef}
+        style={{ ...StyleSheet.absoluteFillObject }}
+        showsUserLocation
+        initialRegion={{
+          latitude: location?.coords.latitude ?? -34.6075682,
+          longitude: location?.coords.longitude ?? -58.4370894,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+      >
+        {destination && (
+          <Marker
+            coordinate={{ latitude: destination.lat, longitude: destination.lon }}
+            title="Destino"
+            description={destination.name}
+          />
+        )}
+        {routeCoords.length > 1 && (
+          <Polyline
+            coordinates={routeCoords}
+            strokeWidth={5}
+            strokeColor="#4285F4"
+          />
+        )}
+      </MapView>
+
+      {/* Selector modo de transporte */}
+      {!showOverlay && (
+        <TransportSelector mode={mode} onChange={setMode} />
+      )}
+
+      {/* Duración estimada */}
+      {duration !== null && destination && !showOverlay && (
+        <DurationBox duration={duration} />
+      )}
+
+      {/* Barra de búsqueda */}
+      <SearchBar
+        value={search}
+        onChangeText={setSearch}
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setSearchFocused(false)}
+        inputRef={inputRef}
+        onClear={handleClearSearch}
+      />
+
+      {/* Overlay de resultados */}
+      {showOverlay && (
+        <SearchResultsOverlay
+          fadeAnim={fadeAnim}
+          searchResults={searchResults}
+          getResultTitleSubtitle={getResultTitleSubtitle}
+          handleSelectResult={handleSelectResult}
+          search={search}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      )}
+
+      {/* Botón de centrar */}
+      {!showOverlay && (
+        <TouchableOpacity style={styles.fab} onPress={handleCenterOnUser}>
+          <Feather name="navigation" size={24} color="#444" />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  fab: {
+    position: "absolute",
+    right: 24,
+    bottom: 32,
+    backgroundColor: "#edededff",
+    borderRadius: 28,
+    width: 56,
+    height: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
   },
 });
