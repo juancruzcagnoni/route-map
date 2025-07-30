@@ -15,7 +15,7 @@ export function TransportSelector({ mode, onChange }: Props) {
         style={[styles.transportBtn, mode === "driving" && styles.transportBtnActive]}
       >
         <MaterialCommunityIcons name="car" size={22} color={mode === "driving" ? "#4285F4" : "#444"} />
-        <Text style={{ fontSize: 12, color: mode === "driving" ? "#4285F4" : "#444" }}>Care</Text>
+        <Text style={{ fontSize: 12, color: mode === "driving" ? "#4285F4" : "#444" }}>Car</Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => onChange("cycling")}
