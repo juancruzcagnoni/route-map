@@ -14,7 +14,7 @@ export function DurationBox({ duration }: Props) {
   }
   return (
     <View style={styles.durationBox}>
-      <Text style={styles.durationText}>{`Tiempo estimado: ${formatDuration(duration)}`}</Text>
+      <Text style={styles.durationText}>{`Estimated time: ${formatDuration(duration)}`}</Text>
     </View>
   );
 }

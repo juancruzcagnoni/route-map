@@ -21,7 +21,7 @@ export function SearchBar({ value, onChangeText, onFocus, onBlur, inputRef, onCl
                     style={[styles.searchInput, { paddingRight: value ? 34 : 8 }]}
                     value={value}
                     onChangeText={onChangeText}
-                    placeholder="Buscar dirección..."
+                    placeholder="Search here..."
                     placeholderTextColor="#888"
                     onFocus={onFocus}
                     onBlur={onBlur}

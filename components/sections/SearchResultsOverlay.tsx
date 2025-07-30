@@ -1,6 +1,6 @@
+import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Animated, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
 
 type Props = {
   fadeAnim: Animated.Value;
@@ -48,7 +48,7 @@ export function SearchResultsOverlay({
           );
         }}
         ListEmptyComponent={() =>
-          search.length > 2 ? <Text style={styles.resultEmpty}>Sin resultados</Text> : null
+          search.length > 2 ? <Text style={styles.resultEmpty}>No results</Text> : null
         }
         keyboardShouldPersistTaps="handled"
         style={{ marginTop: 80 }}

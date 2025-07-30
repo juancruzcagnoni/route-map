@@ -1,6 +1,6 @@
-import React from "react";
-import { TouchableOpacity, Text, View, StyleSheet, Platform } from "react-native";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   mode: "driving" | "cycling" | "walking";
@@ -15,21 +15,21 @@ export function TransportSelector({ mode, onChange }: Props) {
         style={[styles.transportBtn, mode === "driving" && styles.transportBtnActive]}
       >
         <MaterialCommunityIcons name="car" size={22} color={mode === "driving" ? "#4285F4" : "#444"} />
-        <Text style={{ fontSize: 12, color: mode === "driving" ? "#4285F4" : "#444" }}>Auto</Text>
+        <Text style={{ fontSize: 12, color: mode === "driving" ? "#4285F4" : "#444" }}>Care</Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => onChange("cycling")}
         style={[styles.transportBtn, mode === "cycling" && styles.transportBtnActive]}
       >
         <MaterialCommunityIcons name="bike" size={22} color={mode === "cycling" ? "#4285F4" : "#444"} />
-        <Text style={{ fontSize: 12, color: mode === "cycling" ? "#4285F4" : "#444" }}>Bici</Text>
+        <Text style={{ fontSize: 12, color: mode === "cycling" ? "#4285F4" : "#444" }}>Bike</Text>
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => onChange("walking")}
         style={[styles.transportBtn, mode === "walking" && styles.transportBtnActive]}
       >
         <MaterialCommunityIcons name="walk" size={22} color={mode === "walking" ? "#4285F4" : "#444"} />
-        <Text style={{ fontSize: 12, color: mode === "walking" ? "#4285F4" : "#444" }}>A pie</Text>
+        <Text style={{ fontSize: 12, color: mode === "walking" ? "#4285F4" : "#444" }}>Walk</Text>
       </TouchableOpacity>
     </View>
   );
